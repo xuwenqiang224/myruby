@@ -5,6 +5,9 @@
 require 'orclib'
 require 'csv'
 require 'pry'
+require '../../orc_service/ruby_client/watch_dog_client.rb'
+
+
 
 include Orclib::MsgModule
 
@@ -13,7 +16,7 @@ SCRIPT_VERSION = "1.0.0"
 class Diag_Stress_test
 
 	# attr_reader
-	attr_accessor :diag_loops , :task_file_name , :diag_folder ,:tasks_row , :id , :diag_case , :result , :atitool_timeout , :adjust_clock ,:asic_die ,:asic_package ,:default_clock
+	attr_accessor :diag_loops , :task_file_name , :diag_folder ,:tasks_row , :id , :diag_case , :result , :atitool_timeout , :adjust_clock ,:asic_die ,:asic_package ,:default_clock , :default_voltage , :current_voltage, :max_voltage, :voltage_step, :voltage_name , :server_ip , :wombat_ip , :client_ip
 	
 	def initialize
 		@diag_loops = 1
@@ -29,6 +32,20 @@ class Diag_Stress_test
 		@atitool_timeout = 2
 		@adjust_clock = {}
 		@default_clock = {}
+		
+		
+		#voltage
+		@current_voltage = nil
+		@max_voltage = 1.2 #default max voltage 1.2v
+		@voltage_step = 0.00625
+		@default_voltage = {}
+		@voltage_name = nil 
+		
+		#ip
+		@server_ip = nil
+		@wombat_ip = nil
+		@client_ip = nil
+		
 	end
 
 	def run_diag
@@ -85,9 +102,30 @@ end
 begin
 	
 	putz "Diag_Stress_test begin"
+
 	$os = Orclib::OS()
 	$test = Diag_Stress_test.new()
 	$t = Orclib::Atitool()
+	
+	
+	ARGV.each do |i|
+		if i =~ /--server_ip=(.*)/
+			$test.server_ip = $1
+		end
+		
+		if i =~ /--wombat_ip=(.*)/
+			$test.wombat_ip = $1
+		end
+		
+		if i =~ /--client_ip=(.*)/
+			$test.client_ip = $1
+		end
+		
+	end
+	
+	$client = WatchDogClient.new($test.server_ip,$test.client_ip)
+	
+	
 	
 	#get default_clock
 	regex = /clk_(.*)/
