@@ -5,6 +5,9 @@
 require 'orclib'
 require 'csv'
 require 'pry'
+require '../../orc_service/ruby_client/watch_dog_client.rb'
+
+
 
 include Orclib::MsgModule
 
@@ -13,7 +16,7 @@ SCRIPT_VERSION = "1.0.0"
 class Diag_Stress_test
 
 	# attr_reader
-	attr_accessor :diag_loops , :task_file_name , :diag_folder ,:tasks_row , :id , :diag_case , :result , :atitool_timeout , :adjust_clock ,:asic_die ,:asic_package ,:default_clock
+	attr_accessor :diag_loops , :task_file_name , :diag_folder ,:tasks_row , :id , :diag_case , :result , :atitool_timeout , :adjust_clock ,:asic_die ,:asic_package ,:default_clock , :default_voltage , :current_voltage, :max_voltage, :voltage_step, :voltage_name , :server_ip , :wombat_ip , :client_ip
 	
 	def initialize
 		@diag_loops = 1
@@ -30,6 +33,7 @@ class Diag_Stress_test
 		@adjust_clock = {}
 		@default_clock = {}
 
+
 		#adjust_voltage
 		@voltage_name = nil
 		@oringinal_voltage = {}
@@ -38,7 +42,16 @@ class Diag_Stress_test
 		@current_voltage = nil 
 		@actual_voltage = nil
 		@max_voltage = 1.2 #default max voltage
+		@default_voltage = {}
 
+
+		
+		
+		#ip
+		@server_ip = nil
+		@wombat_ip = nil
+		@client_ip = nil
+		
 
 	end
 
@@ -103,9 +116,47 @@ end
 begin
 	
 	putz "Diag_Stress_test begin"
+
 	$os = Orclib::OS()
-	$test = Diag_Stress_test.new()
+	$obj = Orclib::ObjectSave()
 	$t = Orclib::Atitool()
+	
+	#judge if start by machine
+	$manal_run = false
+	ARGV.each |i|
+		if i =~ /^--start/
+			$manal_run = true
+		end
+	end
+	
+	
+	
+	if $manal_run == true
+		$test = Diag_Stress_test.new()
+	
+	
+		ARGV.each do |i|
+			if i =~ /--server_ip=(.*)/
+				$test.server_ip = $1
+			end
+			
+			if i =~ /--wombat_ip=(.*)/
+				$test.wombat_ip = $1
+			end
+			
+			if i =~ /--client_ip=(.*)/
+				$test.client_ip = $1
+			end
+			
+		end
+	else
+		$test = $obj.restore
+	end
+	
+	#start watch_dog function 
+	$client = WatchDogClient.new($test.server_ip,$test.client_ip)
+	
+	
 	
 	#get default_clock
 	regex = /clk_(.*)/
@@ -176,6 +227,7 @@ begin
 			#run diag_test
 			$test.run_diag()
 			
+			$adjust_voltage step by step
 			
 			
 		elsif current_row == nil
