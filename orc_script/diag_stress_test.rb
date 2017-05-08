@@ -32,20 +32,28 @@ class Diag_Stress_test
 		@atitool_timeout = 2
 		@adjust_clock = {}
 		@default_clock = {}
+
 		
 		
-		#voltage
-		@current_voltage = nil
-		@max_voltage = 1.2 #default max voltage 1.2v
-		@voltage_step = 0.00625
-		@default_voltage = {}
-		@voltage_name = nil 
+
 		
 		#ip
 		@server_ip = nil
 		@wombat_ip = nil
 		@client_ip = nil
 		
+
+
+		#adjust_voltage
+		@voltage_name = nil
+		@oringinal_voltage = {}
+		@starting_voltage = nil
+		@step_voltage = 0.00625   #APU usually has this value
+		@current_voltage = nil 
+		@actual_voltage = nil
+		@max_voltage = 1.2 #default max voltage
+
+
 	end
 
 	def run_diag
@@ -98,6 +106,13 @@ class Diag_Stress_test
 	end
 end
 
+#function area
+def 
+end
+
+
+
+
 
 begin
 	
@@ -142,11 +157,19 @@ begin
 				$test.diag_folder = current_row["diag_folder"]
 			end
 			
+
+			#parament read from tasks.csv
 			$test.diag_loops = current_row["diag_loops"].to_i
 			$test.diag_case = current_row["workload"]
 			$test.id = current_row["id"]
 			$test.asic_package = current_row["asic_package"]
 			$test.asic_die = current_row["asic_die"]
+			$test.voltage_name = current_row["voltage_rail_name"]
+			$test.starting_voltage = current_row["starting_voltage"]
+
+
+
+			#call some module
 			$t = Orclib::Atitool()
 			$test.atitool_timeout = current_row["atitool_timeout"]
 			
@@ -158,6 +181,15 @@ begin
 					$test.adjust_clock["#{i.match(regex)[1]}"] = current_row["#{i}"]
 				end
 			end
+
+
+			
+
+
+
+
+
+			#read default clk
 			current_row.headers.each do |i|
 				if i.match(regex)
 					default = Orclib::Atitool()
